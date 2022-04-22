@@ -5,9 +5,7 @@ import torch.nn as nn
 def train(model, dataloader, criterion, optimizer, device="cpu"):
     print("Training...")
     model.train()
-
-    total_loss = 0
-    total_preds = []
+    losses, predictions = [], []
 
     # ? iterate over batches
     for idx, batch in enumerate(dataloader):
@@ -17,10 +15,10 @@ def train(model, dataloader, criterion, optimizer, device="cpu"):
         mask = batch["mask"].to(device)
         labels = batch["labels"].to(device)
 
-        outputs = model(ids, mask)
+        logits = model(ids, mask)
 
         # ? Compute the loss between actual and predicted values
-        loss = criterion(outputs, labels)
+        loss = criterion(logits, labels)
 
         # ? Calculate the gradients via backpropagation
         loss.backward()
@@ -29,25 +27,24 @@ def train(model, dataloader, criterion, optimizer, device="cpu"):
         # ? Update the model parameters
         optimizer.step()
 
-        total_loss = total_loss + loss.item()
-        total_preds.append(outputs.detach().cpu().numpy())
+        labels_pred = torch.sigmoid(logits.detach()).round()
+        losses.append(loss.item())
+        predictions.append(labels_pred)
 
         # ? progress update after every 50 batches.
         if (idx + 1) % 50 == 0:
             print(f"  [Batch {idx+1}\t/{len(dataloader)}] Loss: {loss.item():.4f}")
 
-    avg_loss = total_loss / len(dataloader)
-    total_preds = total_preds.reshape(-1, total_preds.shape[-1])
+    predictions = torch.cat(predictions, dim=0).cpu()
+    losses = torch.tensor(losses).cpu()
 
-    return avg_loss, total_preds
+    return losses, predictions
 
 
 def evaluate(model, dataloader, criterion, device="cpu"):
     print("Evaluating...")
     model.eval()
-
-    total_loss = 0
-    total_preds = []
+    losses, predictions = [], []
 
     for idx, batch in enumerate(dataloader):
         ids = batch["ids"].to(device)
@@ -55,19 +52,18 @@ def evaluate(model, dataloader, criterion, device="cpu"):
         labels = batch["labels"].to(device)
 
         with torch.no_grad():
-            outputs = model(ids, mask)
+            logits = model(ids, mask)
+            loss = criterion(logits, labels)
 
-            # ? Compute the loss between actual and predicted values
-            loss = criterion(outputs, labels)
-
-            total_loss = total_loss + loss.item()
-            total_preds.append(outputs.detach().cpu().numpy())
+        labels_pred = torch.sigmoid(logits.detach()).round()
+        losses.append(loss.item())
+        predictions.append(labels_pred)
 
         # ? progress update after every 50 batches.
         if (idx + 1) % 50 == 0:
             print(f"  [Batch {idx+1}\t/{len(dataloader)}] Loss: {loss.item():.4f}")
 
-    avg_loss = total_loss / len(dataloader)
-    total_preds = total_preds.reshape(-1, total_preds.shape[-1])
+    predictions = torch.cat(predictions, dim=0).cpu()
+    losses = torch.tensor(losses).cpu()
 
-    return avg_loss, total_preds
+    return losses, predictions
