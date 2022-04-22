@@ -6,7 +6,7 @@ def train(model, dataloader, criterion, optimizer, device="cpu"):
     print("Training...")
     model.train()
 
-    total_loss, total_accuracy = 0, 0
+    total_loss = 0
     total_preds = []
 
     # ? iterate over batches
@@ -42,11 +42,11 @@ def train(model, dataloader, criterion, optimizer, device="cpu"):
     return avg_loss, total_preds
 
 
-def evaluate(model, dataloader, criterion, device):
+def evaluate(model, dataloader, criterion, device="cpu"):
     print("Evaluating...")
     model.eval()
 
-    total_loss, total_accuracy = 0, 0
+    total_loss = 0
     total_preds = []
 
     for idx, batch in enumerate(dataloader):
@@ -65,14 +65,9 @@ def evaluate(model, dataloader, criterion, device):
 
         # ? progress update after every 50 batches.
         if (idx + 1) % 50 == 0:
-            print(
-                f"  [Batch {idx+1}\t/{len(dataloader)}]\t"
-                f"Loss: {loss.item():.4f}, accuracy: {accuracy:.4f}"
-            )
+            print(f"  [Batch {idx+1}\t/{len(dataloader)}] Loss: {loss.item():.4f}")
 
     avg_loss = total_loss / len(dataloader)
-
-    # reshape the predictions in form of (number of samples, no. of classes)
-    total_preds = np.concatenate(total_preds, axis=0)
+    total_preds = total_preds.reshape(-1, total_preds.shape[-1])
 
     return avg_loss, total_preds
