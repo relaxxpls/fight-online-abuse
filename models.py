@@ -9,17 +9,16 @@ class DistilBertClassifier(nn.Module):
         self.bert = bert
 
         self.classifier = nn.Sequential(
-            nn.Linear(768, 512),
+            nn.Linear(self.bert.config.hidden_size, 512),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(512, self.num_labels),
-            nn.LogSoftmax(dim=1),
         )
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids, attention_mask)
-        x = outputs.last_hidden_state
-        x = x[:, 0]
-        x = self.classifier(x)
+        sequence_output = outputs.last_hidden_state
+        cls_token = sequence_output[:, 0, :]
+        logits = self.classifier(cls_token)
 
-        return x
+        return logits

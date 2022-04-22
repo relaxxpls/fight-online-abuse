@@ -6,7 +6,7 @@ class TextDataset(Dataset):
     def __init__(self, texts, labels, tokenizer, max_len):
         self.tokenizer = tokenizer
         self.texts = texts
-        self.labels = torch.tensor(labels)
+        self.labels = torch.tensor(labels, dtype=torch.float)
         self.max_len = max_len
 
     def __getitem__(self, index):
